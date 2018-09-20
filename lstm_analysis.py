@@ -17,34 +17,7 @@ from sklearn.model_selection import KFold
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import train_test_split
-
-# BINARY CLASSIFICATION TUTORIAL
-
-# fix random seed for reproducibility
-np.random.seed(7)
-
-# Load data but only keep the top n words, zero the rest
-top_words = 500
-(X_train, y_train), (X_test, y_test) = imdb.load_data(num_words=50)
-
-# truncate and pad input sequences
-max_review_length = 500
-X_train = sequence.pad_sequences(X_train, maxlen=max_review_length)
-X_test = sequence.pad_sequences(X_test, maxlen=max_review_length)
-
-# create the model
-embedding_vecor_length = 32
-model = Sequential()
-model.add(Embedding(top_words, embedding_vecor_length, input_length=max_review_length))
-model.add(LSTM(100))
-model.add(Dense(1, activation='sigmoid'))
-model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-print(model.summary())
-model.fit(X_train, y_train, epochs=3, batch_size=64)
-# Final evaluation of the model
-scores = model.evaluate(X_test, y_test, verbose=0)
-print("Accuracy: %.2f%%" % (scores[1]*100))
-
+import matplotlib.pyplot as plt
 
 # TINGLE ANALYSIS
 
@@ -111,10 +84,10 @@ data = data[(data.ontarget == True)]
 
 data = data.drop(labels=['ontarget'], axis=1)
 
-p1data = data[(data.participant == 1)].drop(labels=['participant'], axis=1)
+p1data = data[(data.participant == 5)].drop(labels=['participant'], axis=1)
 
 p1targets = list(p1data['target'].values)
-p1targets = np.array([1 if x == 'rotate-back-head' else 0 for x in p1targets])
+p1targets = np.array([1 if x == 'rotate-nose' else 0 for x in p1targets])
 p1signals = p1data.drop(labels=['target'], axis=1).values
 
 x_train, x_test, y_train, y_test = train_test_split(p1signals, p1targets, test_size=.33)
@@ -125,7 +98,45 @@ model.add(Dense(1, kernel_initializer='normal', activation='sigmoid'))
 # Compile model
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=100, batch_size=32, verbose=1)
+history = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=100, batch_size=32, verbose=1)
+
+# Visualize training / validation accuracy
+
+print(history.history.keys())
+# summarize history for accuracy
+plt.plot(history.history['acc'])
+plt.plot(history.history['val_acc'])
+plt.title('model accuracy')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.show()
+# summarize history for loss
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper left')
+plt.show()
+
+
+for num in range(len(data.participant.unique())+1):
+
+    pdata = data[(data.participant == num)].drop(labels=['participant'], axis=1)
+    ptargets = list(pdata['target'].values)
+    psignals = pdata.drop(labels=['target'], axis=1).values
+    x_train, x_test, y_train, y_test = train_test_split(psignals, ptargets, test_size=.33)
+
+    model = Sequential()
+    model.add(Dense(7, input_dim=7, kernel_initializer='normal', activation='relu'))
+    model.compile(loss='binary_crossentropy', optimiizer='adam', metrics=['accuracy'])
+
+    history = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=100, batch_size=32, verbose=0)
+
+    history.history['acc']
+    history.history['loss']
+
 
 # def create_baseline():
 #     # create model
