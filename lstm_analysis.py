@@ -3,11 +3,12 @@
 
 import numpy as np
 import pandas as pd
-from keras.models import Sequential
-from keras.layers import Dense
+from sklearn import metrics
 from keras.layers import LSTM
-from sklearn.model_selection import train_test_split
+from keras.layers import Dense
 import matplotlib.pyplot as plt
+from keras.models import Sequential
+from sklearn.model_selection import train_test_split
 
 # Load data and remove columns that are not in use
 
@@ -42,6 +43,9 @@ data = data[(data.ontarget == True)]
 
 data = data.drop(labels=['ontarget'], axis=1)
 
+targets = ['rotate-mouth', 'rotate-nose', 'rotate-cheek', 'rotate-eyebrow', 'rotate-top-head',
+                            'rotate-back-head']
+
 # Subset data from a given participant
 
 # for part_num in range(1, len(data.participant.unique()) + 1):
@@ -53,13 +57,12 @@ for part_num in range(1, 3):
 
     # Select on-target location
 
-    for target_location in ['rotate-mouth', 'rotate-nose', 'rotate-cheek', 'rotate-eyebrow', 'rotate-top-head',
-                            'rotate-back-head']:
+    for target_loc in targets:
 
         # target_location = 'rotate-mouth'
 
         p1targets = list(p1data['target'].values)
-        p1targets = np.array([1 if x == target_location else 0 for x in p1targets])
+        p1targets = np.array([1 if x == target_loc else 0 for x in p1targets])
         p1signals = p1data.drop(labels=['target'], axis=1).values
 
         # Separate into train/test sets
@@ -72,14 +75,18 @@ for part_num in range(1, 3):
         # Create LSTM model
 
         model = Sequential()
-        model.add(LSTM(50, input_shape=(x_train.shape[1], x_train.shape[2])))
+        model.add(LSTM(50, input_shape=(x_train.shape[1], x_train.shape[2]), return_sequences=True, dropout=.2))
+        model.add(LSTM(50, dropout=.2))
         model.add(Dense(1, activation='sigmoid'))
         model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-        history = model.fit(x_train, y_train, epochs=50, batch_size=32, validation_data=(x_test, y_test), verbose=1, shuffle=False)
+        history = model.fit(x_train, y_train, epochs=50, batch_size=32, validation_data=(x_test, y_test), verbose=0, shuffle=False)
         # history = model.fit(x_train, y_train, epochs=50, batch_size=32, verbose=1, shuffle=False)
 
         sig = model.predict_classes(x_test)
+
+        report = metrics.classification_report(sig, y_test)
+        print(report)
 
         # Plot loss and accuracy
         # plt.figure()
@@ -90,9 +97,10 @@ for part_num in range(1, 3):
         # plt.show()
 
         plt.figure()
-        plt.title(str('Participant {} target {}').format(part_num, target_location))
+        plt.title(str('Participant {} target {}').format(part_num, target_loc))
         plt.ylim([.5, 1])
         plt.plot(history.history['acc'], label='train')
         plt.plot(history.history['val_acc'], label='test')
+        plt.plot()
         plt.legend()
         plt.show()
