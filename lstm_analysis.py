@@ -67,7 +67,7 @@ for part_num in range(1, 3):
 
         # Separate into train/test sets
 
-        x_train, x_test, y_train, y_test = train_test_split(p1signals, p1targets, test_size=.33)
+        x_train, x_test, y_train, y_test = train_test_split(p1signals, p1targets, test_size=.33, shuffle=True)
 
         x_train = x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))
         x_test = x_test.reshape((x_test.shape[0], 1, x_test.shape[1]))
@@ -75,7 +75,8 @@ for part_num in range(1, 3):
         # Create LSTM model
 
         model = Sequential()
-        model.add(LSTM(50, input_shape=(x_train.shape[1], x_train.shape[2]), return_sequences=True, dropout=.2))
+        # model.add(LSTM(50, input_shape=(x_train.shape[1], x_train.shape[2]), return_sequences=True, dropout=.2))
+        model.add(LSTM(50, input_shape=(x_train.shape[1], x_train.shape[2]), return_sequences=True))
         model.add(LSTM(50, dropout=.2))
         model.add(Dense(1, activation='sigmoid'))
         model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
@@ -85,8 +86,11 @@ for part_num in range(1, 3):
 
         sig = model.predict_classes(x_test)
 
-        report = metrics.classification_report(sig, y_test)
+        report = metrics.classification_report(y_test, sig)
         print(report)
+
+        conf_matrix = metrics.confusion_matrix(y_test, sig)
+        print(conf_matrix)
 
         # Plot loss and accuracy
         # plt.figure()
@@ -98,9 +102,10 @@ for part_num in range(1, 3):
 
         plt.figure()
         plt.title(str('Participant {} target {}').format(part_num, target_loc))
-        plt.ylim([.5, 1])
+        plt.ylim([0, 1])
         plt.plot(history.history['acc'], label='train')
         plt.plot(history.history['val_acc'], label='test')
         plt.plot()
         plt.legend()
         plt.show()
+
