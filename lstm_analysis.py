@@ -46,12 +46,13 @@ data = data.drop(labels=['ontarget'], axis=1)
 targets = ['rotate-mouth', 'rotate-nose', 'rotate-cheek', 'rotate-eyebrow', 'rotate-top-head',
                             'rotate-back-head']
 
+results_dict = {}
+
 # Subset data from a given participant
 
-# for part_num in range(1, len(data.participant.unique()) + 1):
-for part_num in range(1, 3):
+for part_num in range(23, len(data.participant.unique()) + 1):
 
-    # part_num = 1
+    print(str('Analyzing participant {}').format(part_num))
 
     p1data = data[(data.participant == part_num)].drop(labels=['participant'], axis=1)
 
@@ -59,15 +60,13 @@ for part_num in range(1, 3):
 
     for target_loc in targets:
 
-        # target_location = 'rotate-mouth'
-
         p1targets = list(p1data['target'].values)
         p1targets = np.array([1 if x == target_loc else 0 for x in p1targets])
         p1signals = p1data.drop(labels=['target'], axis=1).values
 
         # Separate into train/test sets
 
-        x_train, x_test, y_train, y_test = train_test_split(p1signals, p1targets, test_size=.33, shuffle=True)
+        x_train, x_test, y_train, y_test = train_test_split(p1signals, p1targets, test_size=.25, shuffle=True)
 
         x_train = x_train.reshape((x_train.shape[0], 1, x_train.shape[1]))
         x_test = x_test.reshape((x_test.shape[0], 1, x_test.shape[1]))
@@ -86,11 +85,15 @@ for part_num in range(1, 3):
 
         sig = model.predict_classes(x_test)
 
-        report = metrics.classification_report(y_test, sig)
-        print(report)
+        report = metrics.classification_report(y_test, sig, output_dict=True)
+        precision = round(report['weighted avg']['precision'], 2)
+        recall = round(report['weighted avg']['recall'], 2)
+        f1score = round(report['weighted avg']['f1-score'], 2)
 
-        conf_matrix = metrics.confusion_matrix(y_test, sig)
-        print(conf_matrix)
+        results_dict[str('{}_{}').format(part_num, target_loc)] = [part_num, target_loc, precision, recall, f1score]
+
+        # conf_matrix = metrics.confusion_matrix(y_test, sig)
+        # print(conf_matrix)
 
         # Plot loss and accuracy
         # plt.figure()
@@ -100,12 +103,16 @@ for part_num in range(1, 3):
         # plt.legend()
         # plt.show()
 
-        plt.figure()
-        plt.title(str('Participant {} target {}').format(part_num, target_loc))
-        plt.ylim([0, 1])
-        plt.plot(history.history['acc'], label='train')
-        plt.plot(history.history['val_acc'], label='test')
-        plt.plot()
-        plt.legend()
-        plt.show()
+        # plt.figure()
+        # plt.title(str('Participant {} target {}').format(part_num, target_loc))
+        # plt.ylim([0, 1])
+        # plt.plot(history.history['acc'], label='train')
+        # plt.plot(history.history['val_acc'], label='test')
+        # plt.plot()
+        # plt.legend()
+        # plt.show()
 
+df = pd.DataFrame.from_dict(results_dict, orient='index', columns=['participant', 'target', 'precision', 'recall', 'f1score'])
+df = df.set_index('participant')
+
+df.to_csv('~/Documents/CMI/tingle_pilot_analysis/results.csv')
