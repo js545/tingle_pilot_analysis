@@ -17,7 +17,34 @@ y_data$Thermal = c(rep('Yes thermal', dim(y_data)[1]))
 data = rbind(n_data, y_data)
 data$thermal = factor(data$Thermal)
 
-ggplot(data, aes(x=AUROC, y=Target, fill=Thermal)) + scale_fill_cyclical(values = c("blue", "red")) + geom_density_ridges(alpha=.5) + ggtitle('AUROC Comparison') + theme(plot.title = element_text(hjust = 0.5))
+data = subset(data, Target == 'mouth')
+data = subset(data, Target == 'nose')
+data = subset(data, Target == 'cheek')
+data = subset(data, Target == 'eyebrow')
+data = subset(data, Target == 'top-head')
+data = subset(data, Target == 'back-head')
+
+for (tar in unique(data$Target)) {
+  
+  png_data = subset(data, Target == tar)
+  
+  savename = paste('~/Documents/CMI/tingle_pilot_analysis/ridgeline_individual_plots/', tar, '.png', sep="")
+  
+  savename
+  
+  png(savename, width=1200, height=1200, res=600)
+  print(ggplot(png_data, aes(x=AUROC, y=Target, fill=Thermal, point_color=Thermal, height=..density../39)) + 
+    scale_fill_cyclical(values = c("blue", "red")) + 
+    # geom_density_ridges(jittered_points=TRUE, point_size=3, size=.25, point_shape="|",
+    # position=position_points_jitter(height=0), alpha=.5, scale=.95) +
+    geom_density(aes(y= ..density../39), stat='density', alpha=.5) +
+    scale_discrete_manual("point_color", values= c('blue', 'red')) + 
+    theme(axis.title.x=element_blank(), axis.title.y=element_blank()) + 
+    ylim(0, .7))
+  dev.off()
+  
+}
+
 
 # Analysis
 
@@ -204,6 +231,64 @@ results = na.omit(results)
 head(results, n=3)
 
 write.csv(results, file='1000_mgc_results_n_thermal.csv')
+
+
+
+
+
+
+
+
+
+# Ridgeline plots for sampling distribution
+
+library(mgc)
+library(reshape2)
+library(ggplot2)
+library(ggridges)
+
+setwd('/Users/jakeson/Documents/CMI/tingle_pilot_analysis/results')
+n_data = read.csv('auroc_n_thermal.csv')
+y_data = read.csv('auroc_y_thermal.csv')
+n_data$Thermal = c(rep('No thermal', dim(n_data)[1]))
+y_data$Thermal = c(rep('Yes thermal', dim(y_data)[1]))
+
+data = rbind(n_data, y_data)
+data$thermal = factor(data$Thermal)
+
+ggplot(data, aes(x=AUROC, y=Target, fill=Thermal, point_color=Thermal)) + scale_fill_cyclical(values = c("blue", "red")) + geom_density_ridges(jittered_points=TRUE, point_size=3, size=.25, point_shape="|", position=position_points_jitter(height=0), alpha=.5, scale=.95) + ggtitle('AUROC Comparison') + theme(plot.title = element_text(hjust = 0.5)) + scale_discrete_manual("point_color", values= c('blue', 'red'))
+
+
+with_path = '/Users/jakeson/Documents/CMI/tingle_pilot_analysis/permutation_results_w/'
+without_path = '/Users/jakeson/Documents/CMI/tingle_pilot_analysis/permutation_results_wo/'
+
+w_data_path = paste(with_path, '1_permutations.csv', sep = "")
+wo_data_path = paste(without_path, '1_permutations.csv', sep = "")
+
+n_data = read.csv(w_data_path)
+y_data = read.csv(wo_data_path)
+
+n_data$Thermal = c(rep('No thermal', dim(n_data)[1]))
+y_data$Thermal = c(rep('Yes thermal', dim(y_data)[1]))
+n_data$location = c(rep('Mouth-Nose', dim(n_data)[1]))
+y_data$location = c(rep('Mouth-Nose', dim(y_data)[1]))
+
+data = rbind(n_data, y_data)
+data$Thermal = factor(data$Thermal)
+
+tar1 = 'rotate.mouth_rotate.cheek'
+
+{ggplot(data, aes(x=rotate.mouth_rotate.cheek, y=location, fill=Thermal, point_color=Thermal)) +
+  scale_fill_cyclical(values = c("red", " blue")) +
+  geom_density_ridges(jittered_points=FALSE, point_size=3, size=.25, point_shape="|", position=position_points_jitter(height=0), alpha=.5, scale=.95) +
+  ggtitle('Distance Comparison') +
+  theme(plot.title = element_text(hjust = 0.5))}
+
+
+
+
+
+
 
 
 
